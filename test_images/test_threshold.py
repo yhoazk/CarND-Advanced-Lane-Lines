@@ -79,12 +79,18 @@ for i in files:
     #hist = np.sum(img[img.shape[0]/4:,:], axis=0)
     # b = th_image(b)
     ##### Find the lane fitting
-    
+    fit_l = np.polyfit(lane_pts['ly'], lane_pts['l'], deg=3)
+    poly_line_l = np.poly1d(fit_l)
+    print(fit_l)
+    line_lsp = np.linspace(0,720-1, 720)
+    #line_l = fit_l[0]*fit_l[0]*fit_l[0]*line_lsp + fit_l[1]*fit_l[1]*line_lsp + fit_l[2]*line_lsp + lane_pts['l'][0]
+    line_l = poly_line_l(line_lsp)
     #####
 
     f, (ax1, ax2) = plt.subplots(1,2)
     ax1.plot(lane_pts['ly'], lane_pts['l'])
     ax2.imshow(b, cmap='gray')
+    ax2.plot(line_l, line_lsp)
     ax2.scatter(lane_pts['l'], lane_pts['ly'], s=50, c='red', marker='o')
     #plt.imshow(th_image(img))
     plt.show()
