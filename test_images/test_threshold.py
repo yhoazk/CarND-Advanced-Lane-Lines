@@ -19,18 +19,18 @@ def get_yellow(img):
     mask = cv2.inRange(img_hsv, (20,50,150),(40,255,255))
     return mask
 
-def remove_outliers(data, m=2):
-    mean = np.mean(data)
-    print(mean)
+def remove_outliers(data_x,data_y, m=2):
+    mean = np.mean(data_x)
+    #print(mean)
     std_data = m*np.std(data)
-    print(std_data)
+    #print(std_data)
     data = list(data)
-    print(data)
+    #print(data)
     #ret_data = np.array(filter(lambda x: abs(x-mean) < std_data, data))
     #ret_data = [d for d in data if (abs(d-mean) < std_data) else mean]
     ret_data = [d  if (abs(d-mean) < std_data or d == 0) else mean for d in data]
-    print(ret_data)
-    return ret_data 
+    #print(ret_data)
+    return ret_data
 
 
 def birds_eye_transform(img):
@@ -73,14 +73,28 @@ def get_hist_slice(img, slices=10):
         sli = img[window:int(window+(h_img/slices)), :]
         sli_sum = np.sum(sli, axis=0)  # get the sum from all the columns
         sli_l, sli_r = (sli_sum[:w_img], sli_sum[w_img:])
-        l_indx = np.mean(np.argpartition(sli_l, -5)[-5:])
-        r_indx = np.mean(np.argpartition(sli_r, -5)[-5:]) + w_img
+
+        # get the location of 5 top max elements
+        l_arg = np.argpartition(sli_l, -5)[-5:]
+        r_arg = np.argpartition(sli_r, -5)[-5:]
+        # Get the value of the max values and decide of this portion
+        # of frame contains something interesiting
+        mag_r = sum(sli_r[r_arg])
+        mag_l = sum(sli_l[l_arg])
+        if mag_l > 100:
+            l_indx = np.mean(l_arg)
+            location_l.append(l_indx)
+            location_ly.append(window)
+
+        if mag_r > 100:
+            r_indx = np.mean(r_arg) + w_img
+            location_ry.append(window)
+            location_r.append(r_indx)
+        #print("r_indx: " + str(r_indx) + " sli_r: " + str(sli_r))
         # add condtion for the case when the index is 0
-        location_ly.append(window)
-        location_ry.append(window)
-        location_l.append(l_indx)
-        location_r.append(r_indx)
     # if a point is 0 make its value the median btw the point before and the point after
+    """
+
     for n,x in enumerate(location_l):
         if x == 0:
             location_ly.pop(n)
@@ -90,8 +104,13 @@ def get_hist_slice(img, slices=10):
         if x == 0:
             location_ry.pop(n)
             location_r.pop(n)
-
+    """
     location = {'l':location_l, 'r':location_r, 'ly':location_ly, 'ry':location_ry}
+    print("l : " + str(len(location_l)))
+    print(location_l)
+    print("r : " + str(len(location_r)))
+    print(location_r)
+
     return location
 
 files = glob("./*.jpg")
@@ -104,8 +123,12 @@ for i in files:
     #hist = np.sum(img[img.shape[0]/4:,:], axis=0)
     # b = th_image(b)
     ##### Find the lane fitting
-    fit_l = np.polyfit(lane_pts['ly'], remove_outliers(lane_pts['l'], 1.2), deg=2)
-    fit_r = np.polyfit(lane_pts['ry'], remove_outliers(lane_pts['r'], 1.2), deg=2)
+    #fit_l = np.polyfit(lane_pts['ly'], remove_outliers(lane_pts['l'], 1.2), deg=2)
+    #fit_r = np.polyfit(lane_pts['ry'], remove_outliers(lane_pts['r'], 1.2), deg=2)
+
+    fit_l = np.polyfit(lane_pts['ly'], lane_pts['l'], deg=2)
+    fit_r = np.polyfit(lane_pts['ry'], lane_pts['r'], deg=2)
+
     poly_line_l = np.poly1d(fit_l)
     poly_line_r = np.poly1d(fit_r)
     print(fit_l)
