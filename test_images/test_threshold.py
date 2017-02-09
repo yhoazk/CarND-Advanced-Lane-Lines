@@ -49,6 +49,22 @@ def birds_eye_transform(img):
    # bird_img = bird_img[::-1]
     return img,  bird_img
 
+
+def rev_birds_eye_transform(img):
+    # from the center of the image
+    h,w = img.shape[:2]
+    #pts = np.array([[w*0.19, h*.95], [(w*0.47), h*0.62], [w*0.53, h*0.62], [w*0.83, h*.95]], np.int32)
+    pts = np.array([[585, 460], [203,720], [1127, 720], [695, 460]], np.int32)
+    pts_rs = pts.reshape((-1,1,2))
+    img = cv2.polylines(img,[pts_rs],True,(0,255,255))
+#   dst_pts =np.array([[(w / 4), 0],[(w / 4), h],[(w * 3 / 4), h],[(w * 3 / 4), 0]], dtype='float32')
+    dst_pts =np.array([[320, 0],[320, 720],[970, 720],[960, 0]], dtype='float32')
+    pts = np.float32(pts)
+    mtx_bv = cv2.getPerspectiveTransform(dst_pts, pts)
+    warp_img = cv2.warpPerspective(img, mtx_bv, (w,h) )
+   # bird_img = bird_img[::-1]
+    return  warp_img
+
 def th_image(img):
     img_g = np.uint8(cv2.cvtColor(img, cv2.COLOR_BGR2HLS))
     s_img = img_g[:,:,2]
@@ -101,12 +117,32 @@ def get_hist_slice(img, slices=10):
 
     return location
 
+
+def get_lane_area(poly_l, poly_r, n=10):
+    """
+    Create a list of points that describe the 
+    area between the lanes, starts from the bottom
+    left corner
+    """
+    # set the list of points as needed by polyfill
+    x = np.linspace(0, 720, n)
+    fy_l = poly_l(x) 
+    fy_r = poly_r(x) 
+
+    return np.append(np.c_[fy_l,x], np.c_[fy_r,x][::-1], axis=0)
+    
+
+
 files = glob("./*.jpg")
 for i in files:
     img = plt.imread(i)
 
-    img = th_image(img)
-    a,b = birds_eye_transform(img)
+    img_th = th_image(img)
+    a,b = birds_eye_transform(img_th)
+    img_zero = np.zeros_like(b)
+    shade = np.zeros_like(b)
+    b3 = np.dstack([b,img_zero,img_zero])
+    print("shape of b: " + str(b3.shape))
     lane_pts = get_hist_slice(b)
     #hist = np.sum(img[img.shape[0]/4:,:], axis=0)
     # b = th_image(b)
@@ -139,6 +175,19 @@ for i in files:
 
    # f, (ax1, ax2) = plt.subplots(1,2)
    # ax1.plot(lane_pts['ly'], lane_pts['l'])
+    shade_polygon = np.int32(get_lane_area(poly_line_l, poly_line_r))
+    plt.scatter(shade_polygon[:,0], shade_polygon[:,1])
+    plt.show()
+    shade = cv2.fillConvexPoly(shade,shade_polygon,1)
+
+    plt.imshow(shade)
+    plt.show()
+    print("shape img" + str(img.shape))
+    print("shape b" + str(b.shape))
+    warp = rev_birds_eye_transform(b3)
+    plt.imshow(warp)
+    plt.show()
+    b = cv2.addWeighted(img, 0.6, warp, 0.4,0)
     plt.imshow(b, cmap='gray')
     plt.plot(line_l, line_lsp, 'g^')
     plt.plot(line_r, line_lsp, 'r^')
