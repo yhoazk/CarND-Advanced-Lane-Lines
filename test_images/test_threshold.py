@@ -4,7 +4,7 @@ import cv2
 import matplotlib.pyplot as plt
 from glob import glob
 import numpy as np
-
+from moviepy.video.io.VideoFileClip import VideoFileClip
 # define color boundaries
 boundaries = [
     ([17, 15, 100], [50, 56, 200]),
@@ -47,7 +47,7 @@ def birds_eye_transform(img):
     mtx_bv = cv2.getPerspectiveTransform(pts, dst_pts)
     bird_img = cv2.warpPerspective(img, mtx_bv, (w,h) )
    # bird_img = bird_img[::-1]
-    return img,  bird_img
+    return  bird_img
 
 
 def rev_birds_eye_transform(img):
@@ -131,18 +131,34 @@ def get_lane_area(poly_l, poly_r, n=10):
 
     return np.append(np.c_[fy_l,x], np.c_[fy_r,x][::-1], axis=0)
     
-
+def process_lane(img):
+    img_th = th_image(img)
+    b_img = birds_eye_transform(img_th)
+    lane_pts = get_hist_slice(b_img)
+    fit_l, v_l = np.polyfit(lane_pts['ly'], remove_outliers(lane_pts['l']), deg=2,cov=True)
+    fit_r, v_r = np.polyfit(lane_pts['ry'], remove_outliers(lane_pts['r']), deg=2,cov=True)
+    poly_line_l = np.poly1d(fit_l)
+    poly_line_r = np.poly1d(fit_r)
+    shade_polygon = np.int32(get_lane_area(poly_line_l, poly_line_r))
+    shade = np.zeros_like(img_th)
+    shade = cv2.fillConvexPoly(shade,shade_polygon,1)
+    warp = rev_birds_eye_transform(shade)
+    warp_3 = np.dstack([120*warp,150*warp,20*warp])
+    shaded_lane= cv2.addWeighted(img, 0.6, warp_3, 0.4,0)
+    return shaded_lane
 
 files = glob("./*.jpg")
 for i in files:
     img = plt.imread(i)
+    img = process_lane(img)
 
+    plt.imshow(img)
+    plt.show()
+"""
     img_th = th_image(img)
-    a,b = birds_eye_transform(img_th)
+    _,b = birds_eye_transform(img_th)
     img_zero = np.zeros_like(b)
     shade = np.zeros_like(b)
-    b3 = np.dstack([b,img_zero,img_zero])
-    print("shape of b: " + str(b3.shape))
     lane_pts = get_hist_slice(b)
     #hist = np.sum(img[img.shape[0]/4:,:], axis=0)
     # b = th_image(b)
@@ -176,22 +192,17 @@ for i in files:
    # f, (ax1, ax2) = plt.subplots(1,2)
    # ax1.plot(lane_pts['ly'], lane_pts['l'])
     shade_polygon = np.int32(get_lane_area(poly_line_l, poly_line_r))
-    plt.scatter(shade_polygon[:,0], shade_polygon[:,1])
-    plt.show()
     shade = cv2.fillConvexPoly(shade,shade_polygon,1)
-
-    plt.imshow(shade)
-    plt.show()
+    warp = rev_birds_eye_transform(shade)
+    warp_3 = np.dstack([120*warp,150*warp,20*warp])
     print("shape img" + str(img.shape))
-    print("shape b" + str(b.shape))
-    warp = rev_birds_eye_transform(b3)
-    plt.imshow(warp)
-    plt.show()
-    b = cv2.addWeighted(img, 0.6, warp, 0.4,0)
-    plt.imshow(b, cmap='gray')
-    plt.plot(line_l, line_lsp, 'g^')
-    plt.plot(line_r, line_lsp, 'r^')
-    plt.scatter(lane_pts['l'], lane_pts['ly'], s=50, c='red', marker='o')
-    plt.scatter(lane_pts['r'], lane_pts['ry'], s=50, c='red', marker='o')
+    print("shape warp" + str(warp_3.shape))
+    b = cv2.addWeighted(img, 0.6, warp_3, 0.4,0)
+    plt.imshow(b)
+#    plt.plot(line_l, line_lsp, 'g^')
+#    plt.plot(line_r, line_lsp, 'r^')
+#    plt.scatter(lane_pts['l'], lane_pts['ly'], s=50, c='red', marker='o')
+#    plt.scatter(lane_pts['r'], lane_pts['ry'], s=50, c='red', marker='o')
     #plt.imshow(th_image(img))
     plt.show()
+"""
