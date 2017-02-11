@@ -105,18 +105,18 @@ def get_hist_slice(img, slices=10, margin=100):
     mask = np.c_[mask, zero_patch]
     img = np.uint8(img)
     mask = np.uint8(mask)
-    print("img:"+str(img.shape))
-    print("mask:"+str(mask.shape))
+    if debug == True:
+        print("img:"+str(img.shape))
+        print("mask:"+str(mask.shape))
     img = cv2.bitwise_and(img,img,mask = mask)
-#    plt.imshow(img)
-#    plt.show()
+
     for window in reversed(range(0,h_img, int(h_img/ slices))):
         sli = img[window:int(window+(h_img/slices)), :]
         sli_sum = np.sum(sli, axis=0)  # get the sum from all the columns
         """
         Add a margin to the histogram to not take pixels at the far left or right
         """
-        sli_l, sli_r = (sli_sum[:w_img//2], sli_sum[w_img//2:]) # TODO: change 1280 to a w_img
+        sli_l, sli_r = (sli_sum[:w_img//2], sli_sum[w_img//2:])
 
         # get the location of 5 top max elements
         l_arg = np.argpartition(sli_l, -5)[-5:]
@@ -211,8 +211,11 @@ def th_image(img):
     return th
 
 
-files = "test5.jpg"# glob("./*.jpg")
-files = glob("./*.jpg")
+
+lin = Line()
+lin.test_in()
+#files = "test5.jpg"# glob("./*.jpg")
+#files = glob("./*.jpg")
 #files = "test_0044.jpg"# glob("./*.jpg")
 #files = glob("./*.jpg")
 #for i in files:
@@ -223,9 +226,9 @@ files = glob("./*.jpg")
 #    cv2.waitKey(400)
  #   cv2.destroyAllWindows()
 
-clip = VideoFileClip("../project_video.mp4")
-clip = clip.fl_image(process_lane)
-clip.write_videofile("./out_video.mp4", audio=False)
+#clip = VideoFileClip("../project_video.mp4")
+#clip = clip.fl_image(process_lane)
+#clip.write_videofile("./out_video.mp4", audio=False)
 """
     img_th = th_image(img)
     _,b = birds_eye_transform(img_th)

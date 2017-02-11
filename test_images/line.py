@@ -1,8 +1,8 @@
 import numpy as np
+from  img_proc import *
 
 
-
-class Line():
+class Line(img_proc):
     def __init__(self):
         # was the line detected in the last iteration?
         self.detected = False
@@ -24,12 +24,14 @@ class Line():
         self.allx = None
         #y values for detected line pixels
         self.ally = None
+        # a flag to indicate if mesasges and images are to be shown to debug
+        self.debug = False
 
 
-    def get_Curvature():
+    def get_Curvature(self):
         pass
 
-    def __get_ThresholdImg(img):
+    def __get_ThresholdImg(self, img):
         img_g = np.uint8(cv2.cvtColor(img, cv2.COLOR_BGR2HLS))
         s_img = img_g[:,:,2]
 
@@ -40,7 +42,22 @@ class Line():
         #sbl_img = np.abs(cv2.Sobel(th_img, cv2.CV_64F, 0,1))
         return th
 
-    def __get_hist_slice(img, slices=10, margin=100):
+    def __remove_outliers(self, data_x, data_y, m=2):
+        mean = np.mean(data_x)
+        #print(mean)
+        std_data = m*np.std(data_x)
+        #print(std_data)
+        #ret_data = [d for d in data if (abs(d-mean) < std_data) else mean]
+        #ret_data = [d  if (abs(d-mean) < std_data) else mean for d in data]
+        ret_data_y = []
+        ret_data_x = []
+        for x,y in zip(data_x, data_y):
+            if (abs(x-mean) < std_data):
+                ret_data_x.append(x)
+                ret_data_y.append(y)
+
+
+    def __get_hist_slice(self, img, slices=10, margin=100):
         """
         Returns the possible location of the center of the line
         based on the pixels with val = 1
@@ -59,9 +76,6 @@ class Line():
         ****-----***-----****
         ****-----***-----****
         ****-----***-----****
-        ****-----***-----****
-        ****-----***-----****
-        ****-----***-----****
         """
         zero_patch = np.zeros((h_img, margin))
         one_patch  = np.ones((h_img, (w_img//2)-(1.5*margin)))
@@ -72,18 +86,19 @@ class Line():
         mask = np.c_[mask, zero_patch]
         img = np.uint8(img)
         mask = np.uint8(mask)
-        #print("img:"+str(img.shape))
-        #print("mask:"+str(mask.shape))
+
         img = cv2.bitwise_and(img,img,mask = mask)
-    #    plt.imshow(img)
-    #    plt.show()
+        if debug:
+            plt.imshow(img)
+            plt.show()
+
         for window in reversed(range(0,h_img, int(h_img/ slices))):
             sli = img[window:int(window+(h_img/slices)), :]
             sli_sum = np.sum(sli, axis=0)  # get the sum from all the columns
             """
             Add a margin to the histogram to not take pixels at the far left or right
             """
-            sli_l, sli_r = (sli_sum[:w_img//2], sli_sum[w_img//2:]) # TODO: change 1280 to a w_img
+            sli_l, sli_r = (sli_sum[:w_img//2], sli_sum[w_img//2:])
 
             # get the location of 5 top max elements
             l_arg = np.argpartition(sli_l, -5)[-5:]
@@ -105,21 +120,22 @@ class Line():
             # add condtion for the case when the index is 0
         # if a point is 0 make its value the median btw the point before and the point after
         location = {'l':location_l, 'r':location_r, 'ly':location_ly, 'ry':location_ry}
-        print("l : " + str(len(location_l)))
-        print(location_l)
-        print("ly : " + str(len(location_ly)))
-        print(location_ly)
+        if debug == True:
+            print("l : " + str(len(location_l)))
+            print(location_l)
+            print("ly : " + str(len(location_ly)))
+            print(location_ly)
 
-        print("r : " + str(len(location_r)))
-        print(location_r)
-        print("ry : " + str(len(location_ry)))
-        print(location_ry)
+            print("r : " + str(len(location_r)))
+            print(location_r)
+            print("ry : " + str(len(location_ry)))
+            print(location_ry)
 
 
         return location
 
 
-    def get_LinePoly():
+    def get_LinePoly(self):
         """
         This returns the filtered polynomial
         To be used in the lane class
