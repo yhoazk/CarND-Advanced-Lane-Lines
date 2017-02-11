@@ -1,14 +1,14 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot  as plt
-from  img_proc import *
+#from  img_proc import *
 """
 This class contains two lanes and compares both lines for coherency and
 correctess.
 
 """
 
-class lane(img_proc):
+class Lane():
     def __init__(self, inLine_l, inLine_r):
         self.line_l = inLine_l
         self.line_r = inLine_r
@@ -33,6 +33,7 @@ class lane(img_proc):
 
     def process_lane(self, img):
         """
+        :img: the image of hte current frame where the shade will be added
         Complete processing of the lane
         - Get filtered polynomial x&y
         - Fill lane area
@@ -40,9 +41,18 @@ class lane(img_proc):
         - Calculate curve radius_of_curvature for lane
         - Print them in the image
         """
-        smoth_poly_l = line_l.get_LinePoly()
-        smoth_poly_r = line_r.get_LinePoly()
-        lane_vertices = __get_lane_area(smoth_poly_l, smoth_poly_r)
+        smoth_poly_l = self.line_l.get_LinePoly()
+        smoth_poly_r = self.line_r.get_LinePoly()
+        lane_vertices = self.__get_lane_area(smoth_poly_l, smoth_poly_r)
+        shade = np.uint8(np.zeros((720,1280)))
+        shade = cv2.fillConvexPoly(shade,lane_vertices,1)
+        plt.imshow(shade, cmap='gray')
+        plt.show()
+        # reverse birds view
+        warp  =  self.line_l.get_reverseBirdsView(shade)
+        warp_3 = np.dstack([120*warp,150*warp,20*warp])
+        shaded_lane= cv2.addWeighted(img, 0.6, warp_3, 0.4,0)
+        return shaded_lane
 
 
 
@@ -59,4 +69,4 @@ class lane(img_proc):
         fy_l = poly_l(x)
         fy_r = poly_r(x)
 
-        return np.append(np.c_[fy_l,x], np.c_[fy_r,x][::-1], axis=0)
+        return np.int32(np.append(np.c_[fy_l,x], np.c_[fy_r,x][::-1], axis=0))

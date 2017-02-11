@@ -210,10 +210,20 @@ def th_image(img):
     #sbl_img = np.abs(cv2.Sobel(th_img, cv2.CV_64F, 0,1))
     return th
 
+if __name__ == '__main__':
+    # create an instance for left and right lines
+    line_l = Line('l')
+    line_r = Line('r')
+    # pass the instances to the lane constructor
+    lane = Lane(line_l, line_r)
+    im = plt.imread("test5.jpg")
+    line_l.update(im)
+    line_r.update(im)
+    im = lane.process_lane(im)
+    plt.imshow(im)
+    plt.show()
 
 
-lin = Line()
-lin.test_in()
 #files = "test5.jpg"# glob("./*.jpg")
 #files = glob("./*.jpg")
 #files = "test_0044.jpg"# glob("./*.jpg")

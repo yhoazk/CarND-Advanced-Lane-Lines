@@ -3,7 +3,8 @@ from  img_proc import *
 
 
 class Line(img_proc):
-    def __init__(self):
+    def __init__(self, side='l', debug=False):
+        super().__init__()
         # was the line detected in the last iteration?
         self.detected = False
         # x values of the last n fits of the line
@@ -25,8 +26,13 @@ class Line(img_proc):
         #y values for detected line pixels
         self.ally = None
         # a flag to indicate if mesasges and images are to be shown to debug
-        self.debug = False
-
+        self.debug = debug
+        # determines if the lone is left line or right line_base_pos
+        self.side = side
+        # confidence
+        self.confidence = 0
+        # Error threshold
+        self.poly = None
 
     def get_Curvature(self):
         pass
@@ -56,6 +62,7 @@ class Line(img_proc):
                 ret_data_x.append(x)
                 ret_data_y.append(y)
 
+        return (ret_data_y, ret_data_x)
 
     def __get_hist_slice(self, img, slices=10, margin=100):
         """
@@ -86,9 +93,9 @@ class Line(img_proc):
         mask = np.c_[mask, zero_patch]
         img = np.uint8(img)
         mask = np.uint8(mask)
-
+        # apply mask to entire image
         img = cv2.bitwise_and(img,img,mask = mask)
-        if debug:
+        if self.debug:
             plt.imshow(img)
             plt.show()
 
@@ -120,7 +127,7 @@ class Line(img_proc):
             # add condtion for the case when the index is 0
         # if a point is 0 make its value the median btw the point before and the point after
         location = {'l':location_l, 'r':location_r, 'ly':location_ly, 'ry':location_ry}
-        if debug == True:
+        if self.debug == True:
             print("l : " + str(len(location_l)))
             print(location_l)
             print("ly : " + str(len(location_ly)))
@@ -131,13 +138,41 @@ class Line(img_proc):
             print("ry : " + str(len(location_ry)))
             print(location_ry)
 
-
+        # temp
+#        if side == 'l':
         return location
 
+    def __calc_poly():
+        pass
+
+    def update(self, img):
+        th_img = self.__get_ThresholdImg(img)
+        b_img  = self.get_birdsView(th_img)
+        lane_pts = self.__get_hist_slice(b_img)
+        # Find the polynomial
+        try:
+            fit, v  = np.polyfit(*self.__remove_outliers(lane_pts[self.side], lane_pts[self.side+'y']), deg=2, cov=True)
+        except:
+            fit = np.polyfit(*self.__remove_outliers(lane_pts[self.side], lane_pts[self.side+'y']), deg=2)
+            v = None
+        self.current_fit = fit
+        # if v == None then there was an exception in fittig the polynomial
+        if v == None:
+            # The covariance matrix could not be obtained, compare with previous
+            # fit
+            pass
+        else:
+            # v indicates the error in fitting hte line, if its big
+            # the confidence drops
+            error_r =np.sum(np.abs(v[:][:][2]))
+            # decide if add or not te new values
+            # TODO add filter here
+            self.poly = np.poly1d(fit)
+        return b_img
 
     def get_LinePoly(self):
         """
         This returns the filtered polynomial
         To be used in the lane class
         """
-        pass
+        return self.poly
