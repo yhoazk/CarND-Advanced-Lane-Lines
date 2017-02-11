@@ -4,7 +4,10 @@ import cv2
 import matplotlib.pyplot as plt
 from glob import glob
 import numpy as np
-#from moviepy.video.io.VideoFileClip import VideoFileClip
+from moviepy.video.io.VideoFileClip import VideoFileClip
+from line import *
+from lane import *
+
 # define color boundaries
 boundaries = [
     ([17, 15, 100], [50, 56, 200]),
@@ -165,12 +168,12 @@ def get_lane_area(poly_l, poly_r, n=10):
 def process_lane(img):
     img_th = th_image(img)
     b_img = birds_eye_transform(img_th)
-    plt.imshow(b_img)
+    #plt.imshow(b_img)
     lane_pts = get_hist_slice(b_img)
     #fit_l, v_l = np.polyfit(*remove_outliers(lane_pts['ly'], lane_pts['l']), deg=2,cov=True)
     #fit_r, v_r = np.polyfit(*remove_outliers(lane_pts['ry'], lane_pts['r']), deg=2,cov=True)
-    plt.scatter(lane_pts['l'], lane_pts['ly'], s=50, c='red', marker='o')
-    plt.scatter(lane_pts['r'], lane_pts['ry'], s=50, c='red', marker='o')
+    #plt.scatter(lane_pts['l'], lane_pts['ly'], s=50, c='red', marker='o')
+    #plt.scatter(lane_pts['r'], lane_pts['ry'], s=50, c='red', marker='o')
     try:
         fit_l, v_l = np.polyfit(*remove_outliers(lane_pts['l'], lane_pts['ly']), deg=2,cov=True)
     except:
@@ -183,9 +186,9 @@ def process_lane(img):
         fit_r = np.polyfit(*remove_outliers(lane_pts['r'], lane_pts['ry']), deg=2)
     poly_line_l = np.poly1d(fit_l)
     poly_line_r = np.poly1d(fit_r)
-    plt.plot(poly_line_l(lane_pts['ly']), lane_pts['ly'], 'g^')
-    plt.plot(poly_line_r(lane_pts['ry']), lane_pts['ry'], 'r^')
-    plt.show()
+    #plt.plot(poly_line_l(lane_pts['ly']), lane_pts['ly'], 'g^')
+    #plt.plot(poly_line_r(lane_pts['ry']), lane_pts['ry'], 'r^')
+    #   plt.show()
     shade_polygon = np.int32(get_lane_area(poly_line_l, poly_line_r))
 
     shade = np.zeros_like(img_th)
@@ -212,17 +215,17 @@ files = "test5.jpg"# glob("./*.jpg")
 files = glob("./*.jpg")
 #files = "test_0044.jpg"# glob("./*.jpg")
 #files = glob("./*.jpg")
-for i in files:
-    img = plt.imread(i)
-    img = process_lane(img)
-    
+#for i in files:
+#    img = plt.imread(i)
+#    img = process_lane(img)
+
 #    cv2.imshow("h",img)
 #    cv2.waitKey(400)
  #   cv2.destroyAllWindows()
 
-    #clip = VideoFileClip("../project_video.mp4")
-    #clip = clip.fl_image(process_lane)
-    #clip.write_videofile("./out_video.mp4", audio=False)
+clip = VideoFileClip("../project_video.mp4")
+clip = clip.fl_image(process_lane)
+clip.write_videofile("./out_video.mp4", audio=False)
 """
     img_th = th_image(img)
     _,b = birds_eye_transform(img_th)
