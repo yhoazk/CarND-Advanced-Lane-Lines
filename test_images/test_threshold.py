@@ -105,9 +105,8 @@ def get_hist_slice(img, slices=10, margin=100):
     mask = np.c_[mask, zero_patch]
     img = np.uint8(img)
     mask = np.uint8(mask)
-    if debug == True:
-        print("img:"+str(img.shape))
-        print("mask:"+str(mask.shape))
+    print("img:"+str(img.shape))
+    print("mask:"+str(mask.shape))
     img = cv2.bitwise_and(img,img,mask = mask)
 
     for window in reversed(range(0,h_img, int(h_img/ slices))):
@@ -194,7 +193,7 @@ def process_lane(img):
     shade = np.zeros_like(img_th)
     shade = cv2.fillConvexPoly(shade,shade_polygon,1)
     warp = rev_birds_eye_transform(shade)
-    warp_3 = np.dstack([120*warp,150*warp,20*warp])
+    warp_3 = np.dstack([220*warp,150*warp,20*warp])
     shaded_lane= cv2.addWeighted(img, 0.6, warp_3, 0.4,0)
     return shaded_lane
 
@@ -210,6 +209,13 @@ def th_image(img):
     #sbl_img = np.abs(cv2.Sobel(th_img, cv2.CV_64F, 0,1))
     return th
 
+def main(img):
+    line_l.update(img)
+    line_r.update(img)
+    return  lane.process_lane(img)
+
+
+
 if __name__ == '__main__':
     # create an instance for left and right lines
     line_l = Line('l')
@@ -217,12 +223,21 @@ if __name__ == '__main__':
     # pass the instances to the lane constructor
     lane = Lane(line_l, line_r)
     im = plt.imread("test5.jpg")
-    line_l.update(im)
-    line_r.update(im)
-    im = lane.process_lane(im)
+    im = main(im)
     plt.imshow(im)
     plt.show()
+    """
+    files = glob("./*.jpg")
+    for i in files:
+        img = plt.imread(i)
+        img = main(img)
 
+        plt.imshow(img)
+    """
+
+    clip = VideoFileClip("../project_video.mp4")
+    clip = clip.fl_image(main)
+    clip.write_videofile("./out_video.mp4", audio=False)
 
 #files = "test5.jpg"# glob("./*.jpg")
 #files = glob("./*.jpg")

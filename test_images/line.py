@@ -7,6 +7,8 @@ class Line(img_proc):
         super().__init__()
         # was the line detected in the last iteration?
         self.detected = False
+        # Number of frames to save
+        self.FRAMES = 5
         # x values of the last n fits of the line
         self.recent_xfitted = []
         #average x values of the fitted line over the last n iterations
@@ -15,6 +17,8 @@ class Line(img_proc):
         self.best_fit = None
         #polynomial coefficients for the most recent fit
         self.current_fit = [np.array([False])]
+        #polynomial coefficients for the last fit
+        self.last_fit = [np.array([False])]
         #radius of curvature of the line in some units
         self.radius_of_curvature = None
         #distance in meters of vehicle center from the line
@@ -33,6 +37,7 @@ class Line(img_proc):
         self.confidence = 0
         # Error threshold
         self.poly = None
+        self.last_poly = []
 
     def get_Curvature(self):
         pass
@@ -119,10 +124,12 @@ class Line(img_proc):
                 location_l.append(l_indx)
                 location_ly.append(window)
 
+
             if mag_r > 100:
                 r_indx = np.mean(r_arg) + w_img//2
                 location_ry.append(window)
                 location_r.append(r_indx)
+
             #print("r_indx: " + str(r_indx) + " sli_r: " + str(sli_r))
             # add condtion for the case when the index is 0
         # if a point is 0 make its value the median btw the point before and the point after
@@ -138,6 +145,12 @@ class Line(img_proc):
             print("ry : " + str(len(location_ry)))
             print(location_ry)
 
+        # add the located points in the array
+        if len(self.recent_xfitted) >= self.FRAMES:
+            self.recent_xfitted.pop(0) # remove the oldest element
+        # add the newest element to the queue
+        self.recent_xfitted.append(location[self.side]) # add the newst values of x
+
         # temp
 #        if side == 'l':
         return location
@@ -149,25 +162,38 @@ class Line(img_proc):
         th_img = self.__get_ThresholdImg(img)
         b_img  = self.get_birdsView(th_img)
         lane_pts = self.__get_hist_slice(b_img)
-        # Find the polynomial
-        try:
-            fit, v  = np.polyfit(*self.__remove_outliers(lane_pts[self.side], lane_pts[self.side+'y']), deg=2, cov=True)
-        except:
-            fit = np.polyfit(*self.__remove_outliers(lane_pts[self.side], lane_pts[self.side+'y']), deg=2)
+
+        if len(lane_pts[self.side]) > 2:
+            # Find the polynomial
+            try:
+                fit, v  = np.polyfit(*self.__remove_outliers(lane_pts[self.side], lane_pts[self.side+'y']), deg=2, cov=True)
+            except:
+                fit = np.polyfit(*self.__remove_outliers(lane_pts[self.side], lane_pts[self.side+'y']), deg=2)
+                v = None
+            self.last_fit = self.current_fit
+            self.current_fit = fit
+        else:
+            # use the past fit as we do not have enough information to decide
+            self.current_fit = self.last_fit
+            fit = self.last_fit
             v = None
-        self.current_fit = fit
         # if v == None then there was an exception in fittig the polynomial
         if v == None:
             # The covariance matrix could not be obtained, compare with previous
             # fit
-            pass
+            self.poly = np.poly1d(fit)
         else:
             # v indicates the error in fitting hte line, if its big
             # the confidence drops
-            error_r =np.sum(np.abs(v[:][:][2]))
+            error_r = np.sum(np.abs(v[:][:][2]))
             # decide if add or not te new values
             # TODO add filter here
+            # if error is small add it as best fit
             self.poly = np.poly1d(fit)
+            if len(self.last_poly) > self.FRAMES:
+                self.last_poly.pop(0)
+
+            self.last_poly.append(self.poly)
         return b_img
 
     def get_LinePoly(self):
@@ -175,4 +201,13 @@ class Line(img_proc):
         This returns the filtered polynomial
         To be used in the lane class
         """
-        return self.poly
+        if len(self.last_poly) <= 2:
+            # the first element
+            self.best_fit = self.poly
+        else:
+            cofs = [x.coeffs for x in self.last_poly]
+            cofs = np.mean(cofs, axis=0)
+
+
+            self.best_fit = np.poly1d(cofs)
+        return self.best_fit

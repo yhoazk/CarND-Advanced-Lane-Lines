@@ -46,8 +46,9 @@ class Lane():
         lane_vertices = self.__get_lane_area(smoth_poly_l, smoth_poly_r)
         shade = np.uint8(np.zeros((720,1280)))
         shade = cv2.fillConvexPoly(shade,lane_vertices,1)
-        plt.imshow(shade, cmap='gray')
-        plt.show()
+        # shows the shade calculates
+        #plt.imshow(shade, cmap='gray')
+        #plt.show()
         # reverse birds view
         warp  =  self.line_l.get_reverseBirdsView(shade)
         warp_3 = np.dstack([120*warp,150*warp,20*warp])
