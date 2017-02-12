@@ -8,7 +8,7 @@ class Line(img_proc):
         # was the line detected in the last iteration?
         self.detected = False
         # Number of frames to save
-        self.FRAMES = 10
+        self.FRAMES = 5
         # x values of the last n fits of the line
         self.recent_xfitted = []
         #average x values of the fitted line over the last n iterations
@@ -44,13 +44,15 @@ class Line(img_proc):
         self.last_poly = []
         self.y_pxm = 30/720
         self.x_pxm = 3.70/700
+        # Buffer of curves to fillter
+        self.buffer_curve = []
 
     def get_CurveRad(self):
         """
         :param poly:
         :return:
         """
-        return self.radius_of_curvature
+        return np.mean(self.buffer_curve)
 
     def __get_ThresholdImg(self, img):
         img_g = np.uint8(cv2.cvtColor(img, cv2.COLOR_BGR2HLS))
@@ -77,7 +79,7 @@ class Line(img_proc):
                 ret_data_x.append(x)
                 ret_data_y.append(y)
 
-        return (ret_data_y, ret_data_x)
+        return ret_data_y, ret_data_x
 
     def __get_hist_slice(self, img, slices=10, margin=100):
         """
@@ -165,9 +167,6 @@ class Line(img_proc):
 #        if side == 'l':
         return location
 
-    def __calc_poly():
-        pass
-
     def update(self, img):
         th_img = self.__get_ThresholdImg(img)
         b_img  = self.get_birdsView(th_img)
@@ -177,6 +176,10 @@ class Line(img_proc):
         x_sc,y_sc = self.__remove_outliers(lane_pts[self.side], lane_pts[self.side+'y'])
         x_sc = np.asarray(x_sc) * self.x_pxm
         y_sc = np.asarray(y_sc) * self.y_pxm
+        print("-------------")
+        print(y_sc)
+        print("-------------")
+
         if len(lane_pts[self.side]) > 2:
             # Find the polynomial
             try:
@@ -199,7 +202,7 @@ class Line(img_proc):
             self.current_fit = self.last_fit
             fit = self.last_fit
             v = None
-        # if v == None then there was an exception in fittig the polynomial
+        # if v == None then there was an exception in fitting the polynomial
         if v == None:
             # The covariance matrix could not be obtained, compare with previous
             # fit
@@ -209,12 +212,24 @@ class Line(img_proc):
             # the confidence drops
             error_r = np.sum(np.abs(v[:][:][2]))
             # decide if add or not te new values
-            # TODO add filter here
-            print(fit_scaled)
+
+
             # if error is small add it as best fit
             curverad = ((1 + (2 * fit_scaled[0] * 719 * self.y_pxm + fit_scaled[1]) ** 2) ** 1.5) / np.absolute(
                 2 * fit_scaled[0])
+
+            print("curveRad"+self.side+": " + str(curverad))
+            test_poly = np.poly1d(fit_scaled)
+            y_test = np.linspace(0,720, 100)
+            #plt.imshow(b_img, cmap='gray')
+            #plt.plot(test_poly(y_test),y_test, color="red", linewidth=3)
+            #plt.show()
             self.radius_of_curvature = curverad
+            # filter by averaging
+            self.buffer_curve.append(curverad)
+            if len(self.buffer_curve) >= self.FRAMES:
+                self.buffer_curve.pop(0)
+
             self.poly = np.poly1d(fit)
             if len(self.last_poly) > self.FRAMES:
                 self.last_poly.pop(0)
@@ -227,7 +242,7 @@ class Line(img_proc):
         This returns the filtered polynomial
         To be used in the lane class
         """
-        if len(self.last_poly) <= 2:
+        if len(self.last_poly) <= 3:
             # the first element
             self.best_fit = self.poly
         else:
@@ -237,6 +252,3 @@ class Line(img_proc):
 
             self.best_fit = np.poly1d(coffs)
         return self.best_fit
-
-
-

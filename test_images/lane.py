@@ -28,6 +28,7 @@ class Lane():
         :return:
          This function compares the curvature of each line
         """
+
         pass
 
     def check_separation(self, fit_l, fit_r):
@@ -47,7 +48,8 @@ class Lane():
         pass
 
     def get_laneOffset(self):
-        return self.lane_offset
+        return str(int(self.lane_offset*100)) + " cm."
+
     def process_laneOffset(self):
         """
         Calculate the offset from the center of the lane
@@ -57,7 +59,7 @@ class Lane():
         center_line = np.poly1d(np.mean([self.line_l.get_LinePoly().coeffs, self.line_r.get_LinePoly().coeffs], axis=0))
         # store the center line polynomial
         self.center_poly = center_line
-        center_point = IMAGE_WIDTH/2 - center_line(715)
+        center_point = IMAGE_WIDTH/2 - center_line(719)
         offset_from_center =center_point* self.line_l.x_pxm
         self.lane_offset = offset_from_center
         return center_point
@@ -67,7 +69,13 @@ class Lane():
         """
         Calculate the offset from the center of the lane
         """
-        return str(0.5*(self.line_l.get_CurveRad() + self.line_r.get_CurveRad()))
+        #return str(np.mean([self.line_l.get_CurveRad(), self.line_r.get_CurveRad()]))
+        y = np.linspace(0,719, 10)
+        x = self.center_poly(y)
+        fit_scaled = np.polyfit(y*self.line_l.y_pxm,x*self.line_l.x_pxm, deg=2)
+        curverad = ((1 + (2 * fit_scaled[0] * 600 + fit_scaled[1]) ** 2) ** 1.5) / np.absolute(2 * fit_scaled[0])
+
+        return str(curverad)
 
     def process_lane(self, img):
         """
@@ -92,12 +100,15 @@ class Lane():
             p1 = (int(self.center_poly(n)), n)
             p2 = (int(self.center_poly(n+self.line_segment_length)), n+self.line_segment_length)
             shade = cv2.line(shade, p1, p2, color=(255,255,255), thickness=5, lineType=4)
+
         # shows the shade calculates
         #plt.imshow(shade, cmap='gray')
         #plt.show()
         # reverse birds view
         warp  =  self.line_l.get_reverseBirdsView(shade)
         warp_3 = np.dstack([120*warp,150*warp,20*warp])
+        ## add a line in the expected center
+        warp_3 = cv2.arrowedLine(warp_3, (640, 719), (640, 680), color=(255, 255, 255), thickness=4, tipLength=0.2)
         shaded_lane= cv2.addWeighted(img, 0.8, warp_3, 0.4,0)
         # add the curvature and offset
         processed_img = cv2.putText(shaded_lane,
@@ -107,7 +118,7 @@ class Lane():
                                     .50,
                                     color=(255,120,40))
         processed_img = cv2.putText(shaded_lane,
-                                    "Deviation from center: " + str(self.get_laneOffset()),
+                                    "Deviation from center: " + self.get_laneOffset(),
                                         (500,90),
                                     cv2.FONT_HERSHEY_SIMPLEX,
                                     .50,
