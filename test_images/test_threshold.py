@@ -222,7 +222,7 @@ if __name__ == '__main__':
     line_r = Line('r')
     # pass the instances to the lane constructor
     lane = Lane(line_l, line_r)
-    im = plt.imread("test5.jpg")
+    im = plt.imread("test3.jpg")
     im = main(im)
     plt.imshow(im)
     plt.show()
@@ -233,8 +233,8 @@ if __name__ == '__main__':
         img = main(img)
 
         plt.imshow(img)
+        plt.show()
     """
-
     clip = VideoFileClip("../project_video.mp4")
     clip = clip.fl_image(main)
     clip.write_videofile("./out_video.mp4", audio=False)

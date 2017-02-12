@@ -5,7 +5,6 @@ import numpy as np
 
 class img_proc():
     def __init__(self):
-        print("img proc called")
         # image shape
         self.w_img = 1280
         self.h_img = 720
@@ -19,7 +18,6 @@ class img_proc():
         self.rev_bv_matrix = cv2.getPerspectiveTransform(self.src_pts, self.dst_pts)
         # The distorion coefficients
         self.dist_cof = None
-        print("img proc done")
 
     def camera_calibration(self, regexp):
         """
