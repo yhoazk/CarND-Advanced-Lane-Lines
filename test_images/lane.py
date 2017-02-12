@@ -20,6 +20,8 @@ class Lane():
         self.lane_vertices = None
         self.center_poly = [np.array([False])]
         self.line_segment_length = ls_length
+        self.curve_buffer = []
+        #self.filter_coefs = [10/100, 10/100,10/100, 10/100, 10/100, 10/100, 10/100]
 
     def check_curvature(self, fit_l, fit_r):
         """
@@ -75,7 +77,16 @@ class Lane():
         fit_scaled = np.polyfit(y*self.line_l.y_pxm,x*self.line_l.x_pxm, deg=2)
         curverad = ((1 + (2 * fit_scaled[0] * 600 + fit_scaled[1]) ** 2) ** 1.5) / np.absolute(2 * fit_scaled[0])
 
-        return str(curverad)
+        self.curve_buffer.append(curverad)
+        if len(self.curve_buffer) > 15:
+            self.curve_buffer.pop(0)
+        curverad = np.mean(self.curve_buffer)
+        if curverad > 4500:
+            curverad = "Straight Lane"
+        else:
+            curverad = str(int(curverad)) + " m"
+
+        return curverad
 
     def process_lane(self, img):
         """
