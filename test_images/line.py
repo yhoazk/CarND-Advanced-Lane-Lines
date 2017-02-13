@@ -65,7 +65,7 @@ class Line(img_proc):
         #sbl_img = np.abs(cv2.Sobel(th_img, cv2.CV_64F, 0,1))
         return th
 
-    def __remove_outliers(self, data_x, data_y, m=2):
+    def remove_outliers(self, data_x, data_y, m=2):
         mean = np.mean(data_x)
         #print(mean)
         std_data = m*np.std(data_x)
@@ -172,13 +172,10 @@ class Line(img_proc):
         b_img  = self.get_birdsView(th_img)
         lane_pts = self.__get_hist_slice(b_img, margin=150)
 
-        x,y = self.__remove_outliers(lane_pts[self.side], lane_pts[self.side+'y'])
-        x_sc,y_sc = self.__remove_outliers(lane_pts[self.side], lane_pts[self.side+'y'])
+        x,y = self.remove_outliers(lane_pts[self.side], lane_pts[self.side+'y'])
+        x_sc,y_sc = self.remove_outliers(lane_pts[self.side], lane_pts[self.side+'y'])
         x_sc = np.asarray(x_sc) * self.x_pxm
         y_sc = np.asarray(y_sc) * self.y_pxm
-        print("-------------")
-        print(y_sc)
-        print("-------------")
 
         if len(lane_pts[self.side]) > 2:
             # Find the polynomial
@@ -218,7 +215,7 @@ class Line(img_proc):
             curverad = ((1 + (2 * fit_scaled[0] * 719 * self.y_pxm + fit_scaled[1]) ** 2) ** 1.5) / np.absolute(
                 2 * fit_scaled[0])
 
-            print("curveRad"+self.side+": " + str(curverad))
+
             test_poly = np.poly1d(fit_scaled)
             y_test = np.linspace(0,720, 100)
             #plt.imshow(b_img, cmap='gray')

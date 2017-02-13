@@ -7,7 +7,7 @@ import numpy as np
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from line import *
 from lane import *
-
+from img_proc import *
 # define color boundaries
 boundaries = [
     ([17, 15, 100], [50, 56, 200]),
@@ -39,7 +39,6 @@ def remove_outliers(data_x, data_y, m=2):
 
     #print(ret_data)
     return (ret_data_y, ret_data_x)
-
 
 def birds_eye_transform(img):
     # from the center of the image
@@ -222,10 +221,15 @@ if __name__ == '__main__':
     line_r = Line('r')
     # pass the instances to the lane constructor
     lane = Lane(line_l, line_r)
+    camera = img_proc()
+    camera.camera_calibration("/home/porko/workspace/nd_selfDrive/CarND-Advanced-Lane-Lines/camera_cal/calibration*")
+
     im = plt.imread("test3.jpg")
+    im = camera.undistort(im)
     im = main(im)
     plt.imshow(im)
     plt.show()
+
     """
     files = glob("./*.jpg")
     for i in files:
