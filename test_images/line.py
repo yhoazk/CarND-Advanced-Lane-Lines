@@ -8,7 +8,7 @@ class Line(img_proc):
         # was the line detected in the last iteration?
         self.detected = False
         # Number of frames to save
-        self.FRAMES = 6
+        self.FRAMES = 10
         # x values of the last n fits of the line
         self.recent_xfitted = []
         #average x values of the fitted line over the last n iterations
@@ -64,10 +64,10 @@ class Line(img_proc):
         in order to differentiate them, select a column and summ the thresholded values
         if the sum is large for an specific channel then choose the other one
         """
-        ls = cv2.Sobel(l_img,cv2.CV_64F, 1,0,None,3)
-        ls_abs = np.abs(ls)
-        sb_t = np.zeros_like(ls_abs, dtype=np.uint8)
-        sb_t[(ls_abs >= 150)&(ls_abs <= 255)] = 255
+        #ls = cv2.Sobel(l_img,cv2.CV_64F, 1,0,None,3)
+        #ls_abs = np.abs(ls)
+        #sb_t = np.zeros_like(ls_abs, dtype=np.uint8)
+        #sb_t[(ls_abs >= 150)&(ls_abs <= 255)] = 255
         #plt.imshow(ls_abs, cmap='gray')
         #plt.show()
 

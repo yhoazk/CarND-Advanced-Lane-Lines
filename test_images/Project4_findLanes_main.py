@@ -48,7 +48,7 @@ def birds_eye_transform(img):
     #pts = np.array([[585, 460], [203,720], [1127, 720], [695, 460]], np.int32)
     #pts = np.array([[320, 0], [320, 720], [970, 720], [960, 0]], dtype='float32')
     #pts_rs = pts.reshape((-1,1,2))
-    src_pts = np.array([[320, 0], [320, 720], [970, 720], [960, 0]], dtype='int32')
+    src_pts = np.array([[320, 0], [320, 720], [970, 720], [970, 0]], dtype='int32')
     # destination points for birds eye transformation
     #dst_pts = np.array([[585, 460], [203, 720], [1127, 720], [695, 460]], dtype='float32').reshape((-1, 1, 2))
 
@@ -71,13 +71,14 @@ def rev_birds_eye_transform(img):
     # from the center of the image
     h,w = img.shape[:2]
     #pts = np.array([[w*0.19, h*.95], [(w*0.47), h*0.62], [w*0.53, h*0.62], [w*0.83, h*.95]], np.int32)
-    pts = np.array([[585, 460], [203,720], [1127, 720], [695, 460]], np.int32)
+    pts = np.array([[577, 460], [240, 685], [1058, 685], [705, 460]], np.int32)
     pts_rs = pts.reshape((-1,1,2))
     img = cv2.polylines(img,[pts_rs],True,(0,255,255))
 #   dst_pts =np.array([[(w / 4), 0],[(w / 4), h],[(w * 3 / 4), h],[(w * 3 / 4), 0]], dtype='float32')
     dst_pts =np.array([[320, 0],[320, 720],[970, 720],[960, 0]], dtype='float32')
     pts = np.float32(pts)
-    mtx_bv = cv2.getPerspectiveTransform(dst_pts, pts)
+    # reverse mtx_bv = cv2.getPerspectiveTransform(dst_pts, pts)
+    mtx_bv = cv2.getPerspectiveTransform(pts, dst_pts)
     warp_img = cv2.warpPerspective(img, mtx_bv, (w,h) )
    # bird_img = bird_img[::-1]
     return  warp_img
@@ -219,6 +220,27 @@ def th_image(img):
     #sbl_img = np.abs(cv2.Sobel(th_img, cv2.CV_64F, 0,1))
     return th
 
+def camera_dist_demo(img):
+    f, (ax1,ax2) = plt.subplots(1,2)
+    ax1.imshow(img)
+    ax2.imshow(camera.undistort(img))
+    plt.show()
+
+def bird_demo(img):
+    #   dst_pts =np.array([[(w / 4), 0],[(w / 4), h],[(w * 3 / 4), h],[(w * 3 / 4), 0]], dtype='float32')
+    #pts = np.array([[585, 460], [203,720], [1127, 720], [695, 460]], dtype='float32')
+    #pts_rs = pts.reshape((-1,1,2))
+    #img = cv2.polylines(img, pts_rs, True, (0, 255, 255))
+
+    pts = np.array([[577, 460], [240, 685], [1058, 685], [705, 460]], np.int32)
+    pts_rs = pts.reshape((-1,1,2))
+    img = cv2.polylines(img,[pts_rs],True,(0,255,255), thickness=3)
+
+    f, (ax1,ax2) = plt.subplots(1,2)
+    ax1.imshow(img)
+    ax2.imshow(rev_birds_eye_transform(img))
+    plt.show()
+
 def main(img):
     im = camera.undistort(img)
     line_l.update(im)
@@ -235,6 +257,10 @@ if __name__ == '__main__':
     lane = Lane(line_l, line_r)
     camera = img_proc()
     camera.camera_calibration("/home/porko/workspace/nd_selfDrive/CarND-Advanced-Lane-Lines/camera_cal/calibration*")
+    im = plt.imread("./straight_lines2.jpg")
+    #bird_demo(im)
+    exit()
+    #camera_dist_demo(im)
     """
     im = plt.imread("test3.jpg")
     im = camera.undistort(im)

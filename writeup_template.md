@@ -1,7 +1,7 @@
-##Writeup Template
+# **Advanced Lane Finding Project**
 ---
 
-**Advanced Lane Finding Project**
+
 
 The goals / steps of this project are the following:
 
@@ -41,51 +41,91 @@ The goals / steps of this project are the following:
 The camera calibration is the process where the distortion created by the lenses in the camera are eliminated
 from the image. OpenCV library includes functionality to remove this distortion, specifically three functions.
 
-- 
+1. [`cv2.findChessboardCorners`](http://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html#findchessboardcorners)
+2. [`cv2.calibrateCamera`](http://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html#calibratecamera)
+3. [`cv2.undistort`](http://docs.opencv.org/2.4/modules/imgproc/doc/geometric_transformations.html#undistort)
+
+
+The order of the functions is the order in which they have to be called, the function `cv2.calibrateCamera`
+ returns a matrix and distortion coefficients, this are stored in a pickle file so we do not have to repeat
+ the procedure each time.
+ 
+In this solution, a class dedicated to image processing and transformation was created: [`img_proc.py`](https://github.com/yhoazk/CarND-Advanced-Lane-Lines/blob/master/test_images/img_proc.py)
+
+This class implements the method [`camera_calibration`](https://github.com/yhoazk/CarND-Advanced-Lane-Lines/blob/master/test_images/img_proc.py#L28-L74)
+where all the calibration is made and the pickle object is generated.
+
+Here are the resulting images before and after calibration, the effect is visible in the edges of the image:
+
+
+
+
 
 ###Pipeline (single images)
 
-####1. Provide an example of a distortion-corrected image.
-To demonstrate this step, I will describe how I apply the distortion correction to one of the test images like this one:
-![alt text][image2]
-####2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
-I used a combination of color and gradient thresholds to generate a binary image (thresholding steps at lines # through # in `another_file.py`).  Here's an example of my output for this step.  (note: this is not actually from one of the test images)
+####1. Example of a distortion-corrected image.
+Here is a demostration of how the image changes with the distortion. The affected pixels are at the edges
+and OpenCV removes the edges and interpolates the image so we have as a result an image without distortion
+and with the same size as the original.
 
-![alt text][image3]
+![](./output_images/Checkboard_dist.png)
+Here is the image distortion applied to one image of the road used in this project.
+![](./output_images/Calibration_result.png)
+
+####2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
+
+To detect the line lanes different color spaces where tested and also different edge detection algorithms,
+and also different order in which the transformations where applied.
+
+At the end, the edge detection algorithms were not really useful as they return some noisy images
+and also take edges which are not if interest. The final process of binarization of the image is as follows:
+
+1. With the birds view image as input, convert the image from BGR to HLS.
+2. Apply a binary threshold to the channels L and S
+3. As one channel is better for clear road and the other is good for dark road, discriminate the image.
+    1. Take a patch from the center of the image with a stride of two.
+    2. Sum all the pixels form the patch
+    3. If the value is high then there are artifacts in the center of the image.
+    4. change to the other channel which detects better the road conditions.
+4. Return either channel L or S.
+
+Here is an example of how this looks:
+##### _Input image_
+![](./output_images/clear_patch.png)
+##### _Read patch_
+![](./output_images/patch.png)
+##### _L Channel_ 
+![](./output_images/L_channel.png)
+##### _S Channel_
+![](./output_images/S_channel.png)
+
+
+Then the selected channel is the S channel, which give us the information needed. This is implemented
+in the class [`Line.py`](./test_images/line.py) in the method: [`__get_ThresholdImg`](https://github.com/yhoazk/CarND-Advanced-Lane-Lines/blob/master/test_images/line.py#L57-L95)
+
 
 ####3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
 
 The code for my perspective transform includes a function called `warper()`, which appears in lines 1 through 8 in the file `example.py` (output_images/examples/example.py) (or, for example, in the 3rd code cell of the IPython notebook).  The `warper()` function takes as inputs an image (`img`), as well as source (`src`) and destination (`dst`) points.  I chose the hardcode the source and destination points in the following manner:
 
-```
-src = np.float32(
-    [[(img_size[0] / 2) - 55, img_size[1] / 2 + 100],
-    [((img_size[0] / 6) - 10), img_size[1]],
-    [(img_size[0] * 5 / 6) + 60, img_size[1]],
-    [(img_size[0] / 2 + 55), img_size[1] / 2 + 100]])
-dst = np.float32(
-    [[(img_size[0] / 4), 0],
-    [(img_size[0] / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), 0]])
-
-```
-This resulted in the following source and destination points:
+The class [`img_proc::get_birdsView`](https://github.com/yhoazk/CarND-Advanced-Lane-Lines/blob/master/test_images/img_proc.py#L76-L77) implements and describes the 
+warping/perspective transformation, the polygon is initializated in the `__init__` function for this class.
+The selected values are a modification from the given as example for this project, 
+this resulted in the following source and destination points:
 
 | Source        | Destination   | 
 |:-------------:|:-------------:| 
-| 585, 460      | 320, 0        | 
-| 203, 720      | 320, 720      |
-| 1127, 720     | 960, 720      |
-| 695, 460      | 960, 0        |
+| 577, 460      | 320, 0        | 
+| 240, 685      | 320, 720      |
+| 1058, 685     | 970, 720      |
+| 705, 460      | 970, 0        |
 
-I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
-
-![alt text][image4]
+To verify that the transformtion was being as correct as possible the countour was drawn and displayed.
+![](./output_images/Plygon_bird.png)
 
 ####4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
 
-Then I did some other stuff and fit my lane lines with a 2nd order polynomial kinda like this:
+
 
 ![alt text][image5]
 
