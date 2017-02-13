@@ -252,6 +252,7 @@ if __name__ == '__main__':
         im = main(im)
         plt.imshow(im)
         plt.show()
+
         #img = plt.imread(i)
         #src_pts = np.array([[585, 460], [203,720], [1127, 720], [695, 460]], dtype='int32')
         #src_pts = np.array([[577, 460], [240, 685], [1058, 685], [705, 460]], dtype='int32')

@@ -84,7 +84,7 @@ class Lane():
         self.curve_buffer.append(curverad)
         _, self.curve_buffer = self.line_l.remove_outliers(self.curve_buffer,[None]*len(self.curve_buffer))
         buff_mean= np.mean(self.curve_buffer)
-        print("Buf Mean: " +str(buff_mean))
+        #print("Buf Mean: " +str(buff_mean))
         #outlier = np.abs(buff_mean - curverad) > np.std(self.curve_buffer)*2
         if curverad > 4000.0:
             buff_mean = "Straight Lane"

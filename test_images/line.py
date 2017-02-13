@@ -58,29 +58,56 @@ class Line(img_proc):
         img_g = np.uint8(cv2.cvtColor(img, cv2.COLOR_BGR2HLS))
         l_img = img_g[:,:,1]
         s_img = img_g[:, :, 2]
+        """
+        Detect the color of the ground, if its clear, the l-channel does a better job
+        if its dark the S channel its better
+        in order to differentiate them, select a column and summ the thresholded values
+        if the sum is large for an specific channel then choose the other one
+        """
+        ls = cv2.Sobel(l_img,cv2.CV_64F, 1,0,None,3)
+        ls_abs = np.abs(ls)
+        sb_t = np.zeros_like(ls_abs, dtype=np.uint8)
+        sb_t[(ls_abs >= 150)&(ls_abs <= 255)] = 255
+        #plt.imshow(ls_abs, cmap='gray')
+        #plt.show()
 
 
         ret, th_s = cv2.threshold(s_img,120,255,cv2.THRESH_BINARY)
+        patch_s = th_s[100:500:2, 600:640:2]
         ret, th_l = cv2.threshold(l_img,120,255,cv2.THRESH_BINARY)
-        th = cv2.bitwise_or(th_s, th_s, mask=th_l)
-        """
-        f, (ax1, ax2, ax3) = plt.subplots(3)
+        patch_1 = th_l[100:500:2, 600:640:2]
 
-        ax1.imshow(th_s, cmap='gray')
-        ax1.set_title('S chansdasdnel')
-        ax2.imshow(th_l,cmap='gray')
-        ax1.set_title('l channel')
-        ax3.imshow(th, cmap='gray')
-        ax3.set_title('bin and channel')
-        """
-        #th = cv2.adaptiveThreshold(s_img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
+        sum_patch_l = np.sum(patch_1)
+        sum_patch_s = np.sum(patch_s)
+        #print("Sum pach l " + str(sum_patch_l))
+        #print("Sum pach s " + str(sum_patch_s))
+
+        # select the channel to use
+        if sum_patch_l > 10000:
+            result_image = th_s
+        else:
+            result_image = th_l
+
+        th = cv2.bitwise_or(th_s, th_s, mask=th_l)
+        if self.side == 'l' and False:
+            f, (ax1, ax2, ax3) = plt.subplots(3)
+            th_s[100:500:2, 600:640:2] = 1
+            th_l[100:500:2, 600:640:2] = 1
+            ax1.imshow(th_s, cmap='gray')
+            ax1.set_title('S channel: ' + str(sum_patch_s))
+            ax2.imshow(th_l,cmap='gray')
+            ax2.set_title('l channel: ' + str(sum_patch_l))
+            ax3.imshow(result_image, cmap='gray')
+            ax3.set_title('Result image')
+            plt.show()
+        #sth = cv2.adaptiveThreshold(s_img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
 
 
         #th_img = np.zeros_like(s_img)
         #th_img[(s_img > 50)] = 1
         #edge = cv2.Canny(s_img,250,200)
         #sbl_img = np.abs(cv2.Sobel(th_img, cv2.CV_64F, 0,1))
-        return th_s
+        return result_image
 
     def remove_outliers(self, data_x, data_y, m=2):
         mean = np.mean(data_x)
@@ -191,7 +218,7 @@ class Line(img_proc):
         b_img = self.__get_ThresholdImg(b_img)
         #plt.imshow(b_img, cmap='gray')
         #plt.show()
-        lane_pts = self.__get_hist_slice(b_img, margin=250)
+        lane_pts = self.__get_hist_slice(b_img, margin=160)
 
         x,y = self.remove_outliers(lane_pts[self.side], lane_pts[self.side+'y'])
         x_sc,y_sc = self.remove_outliers(lane_pts[self.side], lane_pts[self.side+'y'])
