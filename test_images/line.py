@@ -8,7 +8,7 @@ class Line(img_proc):
         # was the line detected in the last iteration?
         self.detected = False
         # Number of frames to save
-        self.FRAMES = 15
+        self.FRAMES = 6
         # x values of the last n fits of the line
         self.recent_xfitted = []
         #average x values of the fitted line over the last n iterations
@@ -73,14 +73,10 @@ class Line(img_proc):
 
 
         ret, th_s = cv2.threshold(s_img,120,255,cv2.THRESH_BINARY)
-        patch_s = th_s[100:500:2, 600:640:2]
         ret, th_l = cv2.threshold(l_img,120,255,cv2.THRESH_BINARY)
         patch_1 = th_l[100:500:2, 600:640:2]
 
         sum_patch_l = np.sum(patch_1)
-        sum_patch_s = np.sum(patch_s)
-        #print("Sum pach l " + str(sum_patch_l))
-        #print("Sum pach s " + str(sum_patch_s))
 
         # select the channel to use
         if sum_patch_l > 10000:
@@ -88,18 +84,7 @@ class Line(img_proc):
         else:
             result_image = th_l
 
-        th = cv2.bitwise_or(th_s, th_s, mask=th_l)
-        if self.side == 'l' and False:
-            f, (ax1, ax2, ax3) = plt.subplots(3)
-            th_s[100:500:2, 600:640:2] = 1
-            th_l[100:500:2, 600:640:2] = 1
-            ax1.imshow(th_s, cmap='gray')
-            ax1.set_title('S channel: ' + str(sum_patch_s))
-            ax2.imshow(th_l,cmap='gray')
-            ax2.set_title('l channel: ' + str(sum_patch_l))
-            ax3.imshow(result_image, cmap='gray')
-            ax3.set_title('Result image')
-            plt.show()
+
         #sth = cv2.adaptiveThreshold(s_img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
 
 
@@ -125,7 +110,7 @@ class Line(img_proc):
 
         return ret_data_y, ret_data_x
 
-    def __get_hist_slice(self, img, slices=10, margin=100):
+    def __get_hist_slice(self, img, slices=10, margin=140):
         """
         Returns the possible location of the center of the line
         based on the pixels with val = 1
@@ -218,7 +203,7 @@ class Line(img_proc):
         b_img = self.__get_ThresholdImg(b_img)
         #plt.imshow(b_img, cmap='gray')
         #plt.show()
-        lane_pts = self.__get_hist_slice(b_img, margin=160)
+        lane_pts = self.__get_hist_slice(b_img, margin=100)
 
         x,y = self.remove_outliers(lane_pts[self.side], lane_pts[self.side+'y'])
         x_sc,y_sc = self.remove_outliers(lane_pts[self.side], lane_pts[self.side+'y'])
@@ -266,9 +251,6 @@ class Line(img_proc):
 
             test_poly = np.poly1d(fit_scaled)
             y_test = np.linspace(0,720, 100)
-            #plt.imshow(b_img, cmap='gray')
-            #plt.plot(test_poly(y_test),y_test, color="red", linewidth=3)
-            #plt.show()
             self.radius_of_curvature = curverad
             # filter by averaging
             self.buffer_curve.append(curverad)

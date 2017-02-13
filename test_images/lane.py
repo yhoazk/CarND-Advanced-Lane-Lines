@@ -62,7 +62,7 @@ class Lane():
         center_line = np.poly1d(np.mean([self.line_l.get_LinePoly().coeffs, self.line_r.get_LinePoly().coeffs], axis=0))
         # store the center line polynomial
         self.center_poly = center_line
-        center_point = IMAGE_WIDTH/2 - center_line(719)
+        center_point = IMAGE_WIDTH/2 - center_line(709)
         offset_from_center =center_point* self.line_l.x_pxm
         self.lane_offset = offset_from_center
         return center_point
@@ -82,7 +82,7 @@ class Lane():
             self.curve_buffer.pop(0)
 
         self.curve_buffer.append(curverad)
-        _, self.curve_buffer = self.line_l.remove_outliers(self.curve_buffer,[None]*len(self.curve_buffer))
+        _, self.curve_buffer = self.line_l.remove_outliers(self.curve_buffer,[None]*len(self.curve_buffer), m=3)
         buff_mean= np.mean(self.curve_buffer)
         #print("Buf Mean: " +str(buff_mean))
         #outlier = np.abs(buff_mean - curverad) > np.std(self.curve_buffer)*2
