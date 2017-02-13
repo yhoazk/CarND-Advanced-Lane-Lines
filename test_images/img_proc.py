@@ -2,6 +2,8 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from glob import glob
+import os.path
+import pickle
 
 class img_proc():
     def __init__(self):
@@ -11,7 +13,9 @@ class img_proc():
         # source points for birds eye transformation
         self.src_pts = np.array([[320, 0],[320, 720],[970, 720],[960, 0]], dtype='float32')
         # destination points for birds eye transformation
-        self.dst_pts = np.array([[585, 460], [203,720], [1127, 720], [695, 460]], dtype='float32').reshape((-1,1,2))
+        #self.dst_pts = np.array([[585, 460], [203,720], [1127, 720], [695, 460]], dtype='float32').reshape((-1,1,2))
+        self.dst_pts = np.array([[577, 460], [240, 685], [1058, 685], [705, 460]], dtype='float32').reshape((-1,1,2))
+
         # birds eye matrix
         self.bv_matrix = cv2.getPerspectiveTransform(self.dst_pts, self.src_pts)
         # reversed birds eye matrix
@@ -25,6 +29,7 @@ class img_proc():
         """
         regexp is the regular expression for the glob
         """
+
         # Number of corners in x
         nx = 9
         # Number of corners in y
@@ -33,6 +38,12 @@ class img_proc():
         CAMERA_UNDISTORT_FILE = "/home/porko/workspace/nd_selfDrive/CarND-Advanced-Lane-Lines/output_images/calibration/"
         # Pickle file name
         CAMERA_PICKLE_NAME = "camera_undist.p"
+        if os.path.isfile(CAMERA_UNDISTORT_FILE + CAMERA_PICKLE_NAME ):
+            rest_cam = pickle.load(open(CAMERA_UNDISTORT_FILE + CAMERA_PICKLE_NAME,"rb") )
+            self.dist_dist = rest_cam["dist"]
+            self.dist_mtx = rest_cam["mtx"]
+            return
+
         # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
         objp = np.zeros((nx * ny, 3), np.float32)
         objp[:, :2] = np.mgrid[0:nx, 0:ny].T.reshape(-1, 2)
@@ -59,6 +70,8 @@ class img_proc():
         ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, (h, w), None, None)
         self.dist_mtx = mtx
         self.dist_dist = dist
+        camera_undist = {"mtx": mtx, "dist": dist, "rvecs": rvecs, "tvecs": tvecs}
+        pickle.dump(camera_undist, open(CAMERA_UNDISTORT_FILE + CAMERA_PICKLE_NAME, "wb"))
 
     def get_birdsView(self, img):
         return cv2.warpPerspective(img, self.bv_matrix, (self.w_img,self.h_img) )

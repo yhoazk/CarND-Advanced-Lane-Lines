@@ -8,7 +8,7 @@ class Line(img_proc):
         # was the line detected in the last iteration?
         self.detected = False
         # Number of frames to save
-        self.FRAMES = 5
+        self.FRAMES = 15
         # x values of the last n fits of the line
         self.recent_xfitted = []
         #average x values of the fitted line over the last n iterations
@@ -56,14 +56,31 @@ class Line(img_proc):
 
     def __get_ThresholdImg(self, img):
         img_g = np.uint8(cv2.cvtColor(img, cv2.COLOR_BGR2HLS))
-        s_img = img_g[:,:,2]
+        l_img = img_g[:,:,1]
+        s_img = img_g[:, :, 2]
 
-        ret, th = cv2.threshold(s_img,127,255,cv2.THRESH_BINARY)
+
+        ret, th_s = cv2.threshold(s_img,120,255,cv2.THRESH_BINARY)
+        ret, th_l = cv2.threshold(l_img,120,255,cv2.THRESH_BINARY)
+        th = cv2.bitwise_or(th_s, th_s, mask=th_l)
+        """
+        f, (ax1, ax2, ax3) = plt.subplots(3)
+
+        ax1.imshow(th_s, cmap='gray')
+        ax1.set_title('S chansdasdnel')
+        ax2.imshow(th_l,cmap='gray')
+        ax1.set_title('l channel')
+        ax3.imshow(th, cmap='gray')
+        ax3.set_title('bin and channel')
+        """
+        #th = cv2.adaptiveThreshold(s_img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
+
+
         #th_img = np.zeros_like(s_img)
         #th_img[(s_img > 50)] = 1
         #edge = cv2.Canny(s_img,250,200)
         #sbl_img = np.abs(cv2.Sobel(th_img, cv2.CV_64F, 0,1))
-        return th
+        return th_s
 
     def remove_outliers(self, data_x, data_y, m=2):
         mean = np.mean(data_x)
@@ -168,9 +185,13 @@ class Line(img_proc):
         return location
 
     def update(self, img):
-        th_img = self.__get_ThresholdImg(img)
-        b_img  = self.get_birdsView(th_img)
-        lane_pts = self.__get_hist_slice(b_img, margin=150)
+        b_img  = self.get_birdsView(img)
+        #plt.imshow(b_img)
+        #plt.show()
+        b_img = self.__get_ThresholdImg(b_img)
+        #plt.imshow(b_img, cmap='gray')
+        #plt.show()
+        lane_pts = self.__get_hist_slice(b_img, margin=250)
 
         x,y = self.remove_outliers(lane_pts[self.side], lane_pts[self.side+'y'])
         x_sc,y_sc = self.remove_outliers(lane_pts[self.side], lane_pts[self.side+'y'])

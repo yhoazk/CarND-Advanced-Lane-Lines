@@ -45,13 +45,23 @@ def birds_eye_transform(img):
     print(img.shape)
     h,w = img.shape[:2]
     #pts = np.array([[w*0.19, h*.95], [(w*0.47), h*0.62], [w*0.53, h*0.62], [w*0.83, h*.95]], np.int32)
-    pts = np.array([[585, 460], [203,720], [1127, 720], [695, 460]], np.int32)
-    pts_rs = pts.reshape((-1,1,2))
-    img = cv2.polylines(img,[pts_rs],True,(0,255,255))
+    #pts = np.array([[585, 460], [203,720], [1127, 720], [695, 460]], np.int32)
+    #pts = np.array([[320, 0], [320, 720], [970, 720], [960, 0]], dtype='float32')
+    #pts_rs = pts.reshape((-1,1,2))
+    src_pts = np.array([[320, 0], [320, 720], [970, 720], [960, 0]], dtype='int32')
+    # destination points for birds eye transformation
+    #dst_pts = np.array([[585, 460], [203, 720], [1127, 720], [695, 460]], dtype='float32').reshape((-1, 1, 2))
+
+    dst_pts = np.array([[577, 460], [240, 685], [1058, 685], [705, 460]], dtype='float32').reshape((-1, 1, 2))
+
+    #poly_pts = np.int(src_pts)#.reshape((-1,1,2))
+    img = cv2.polylines(img,[src_pts],True,(0,255,255), thickness=3)
+    #
 #   dst_pts =np.array([[(w / 4), 0],[(w / 4), h],[(w * 3 / 4), h],[(w * 3 / 4), 0]], dtype='float32')
-    dst_pts =np.array([[320, 0],[320, 720],[970, 720],[960, 0]], dtype='float32')
-    pts = np.float32(pts)
-    mtx_bv = cv2.getPerspectiveTransform(pts, dst_pts)
+    #dst_pts =np.array([[320, 0],[320, 720],[970, 720],[960, 0]], dtype='float32')
+    #dst_pts = np.array([[585, 460], [203,720], [1127, 720], [695, 460]], dtype='float32').reshape((-1,1,2))
+    #pts = np.float32(pts)
+    mtx_bv = cv2.getPerspectiveTransform(dst_pts, src_pts)
     bird_img = cv2.warpPerspective(img, mtx_bv, (w,h) )
    # bird_img = bird_img[::-1]
     return  bird_img
@@ -200,8 +210,9 @@ def process_lane(img):
 def th_image(img):
     img_g = np.uint8(cv2.cvtColor(img, cv2.COLOR_BGR2HLS))
     s_img = img_g[:,:,2]
-    print(s_img.shape)
-    ret, th = cv2.threshold(s_img,127,255,cv2.THRESH_BINARY)
+    ret, th = cv2.threshold(s_img,150,255,cv2.THRESH_BINARY)
+    plt.imshow(th, cmap='gray')
+    plt.show()
     #th_img = np.zeros_like(s_img)
     #th_img[(s_img > 50)] = 1
 #    edge = cv2.Canny(s_img,250,200)
@@ -209,9 +220,10 @@ def th_image(img):
     return th
 
 def main(img):
-    line_l.update(img)
-    line_r.update(img)
-    return  lane.process_lane(img)
+    im = camera.undistort(img)
+    line_l.update(im)
+    line_r.update(im)
+    return  lane.process_lane(im)
 
 
 
@@ -223,25 +235,45 @@ if __name__ == '__main__':
     lane = Lane(line_l, line_r)
     camera = img_proc()
     camera.camera_calibration("/home/porko/workspace/nd_selfDrive/CarND-Advanced-Lane-Lines/camera_cal/calibration*")
-
+    """
     im = plt.imread("test3.jpg")
     im = camera.undistort(im)
     im = main(im)
     plt.imshow(im)
     plt.show()
-
-    """
-    files = glob("./*.jpg")
-    for i in files:
-        img = plt.imread(i)
-        img = main(img)
-
-        plt.imshow(img)
-        plt.show()
     """
     clip = VideoFileClip("../project_video.mp4")
     clip = clip.fl_image(main)
     clip.write_videofile("./out_video.mp4", audio=False)
+    exit()
+    files = glob("./sha*.jpg")
+    for i in files:
+        im = plt.imread(i)
+        im = main(im)
+        plt.imshow(im)
+        plt.show()
+        #img = plt.imread(i)
+        #src_pts = np.array([[585, 460], [203,720], [1127, 720], [695, 460]], dtype='int32')
+        #src_pts = np.array([[577, 460], [240, 685], [1058, 685], [705, 460]], dtype='int32')
+        #pts_rs = src_pts.reshape((-1, 1, 2))
+        #img = cv2.polylines(img, [pts_rs], True, (0, 255, 255), thickness=3)
+        #plt.imshow(img)
+        #plt.show()
+        #th_m = camera.get_birdsView(img)
+
+        #plt.imshow(th_m, cmap='gray')
+        #plt.show()
+        #th_m = th_image(th_m)
+        #plt.imshow(th_m, cmap='gray')
+        #plt.show()
+        #img = main(img)
+
+        #plt.imshow(img)
+        #plt.show()
+    #clip = VideoFileClip("../project_video.mp4")
+    #clip = clip.fl_image(main)
+    #clip.write_videofile("./out_video.mp4", audio=False)
+
 
 #files = "test5.jpg"# glob("./*.jpg")
 #files = glob("./*.jpg")
