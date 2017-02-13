@@ -118,7 +118,11 @@ class Lane():
             shade = cv2.line(shade, p1, p2, color=(255,255,255), thickness=5, lineType=4)
 
         # shows the shade calculates
-        #plt.imshow(shade, cmap='gray')
+        #sss = np.dstack([120 * shade, 150 * shade, 20 * shade])
+        #tt = self.line_l.get_birdsView(img)
+        #test_img = cv2.addWeighted(tt, 0.8, sss, 0.4, 0)
+
+        #plt.imshow(test_img)
         #plt.show()
         # reverse birds view
         warp  =  self.line_l.get_reverseBirdsView(shade)

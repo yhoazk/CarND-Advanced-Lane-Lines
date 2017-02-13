@@ -139,10 +139,11 @@ class Line(img_proc):
         mask = np.c_[mask, zero_patch]
         img = np.uint8(img)
         mask = np.uint8(mask)
+
         # apply mask to entire image
         img = cv2.bitwise_and(img,img,mask = mask)
         if self.debug:
-            plt.imshow(img)
+            plt.imshow(img, cmap='gray')
             plt.show()
 
         for window in reversed(range(0,h_img, int(h_img/ slices))):
@@ -201,7 +202,7 @@ class Line(img_proc):
         #plt.imshow(b_img)
         #plt.show()
         b_img = self.__get_ThresholdImg(b_img)
-        #plt.imshow(b_img, cmap='gray')
+        plt.imshow(b_img, cmap='gray')
         #plt.show()
         lane_pts = self.__get_hist_slice(b_img, margin=100)
 
@@ -248,9 +249,12 @@ class Line(img_proc):
             curverad = ((1 + (2 * fit_scaled[0] * 719 * self.y_pxm + fit_scaled[1]) ** 2) ** 1.5) / np.absolute(
                 2 * fit_scaled[0])
 
-
-            test_poly = np.poly1d(fit_scaled)
-            y_test = np.linspace(0,720, 100)
+            ## Un comment to plot polynomials
+            #test_poly = np.poly1d(fit)
+            #y_test = np.linspace(0,720, 100)
+            #plt.plot(test_poly(y_test), y_test, color='red', marker='^')
+            #plt.title("Poly Left" + str(fit[0])+"*X^2"+str(fit[1])+"*X" + str(fit[2]))
+            #plt.show()
             self.radius_of_curvature = curverad
             # filter by averaging
             self.buffer_curve.append(curverad)

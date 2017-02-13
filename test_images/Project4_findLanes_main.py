@@ -259,7 +259,7 @@ if __name__ == '__main__':
     camera.camera_calibration("/home/porko/workspace/nd_selfDrive/CarND-Advanced-Lane-Lines/camera_cal/calibration*")
     im = plt.imread("./straight_lines2.jpg")
     #bird_demo(im)
-    exit()
+    #exit()
     #camera_dist_demo(im)
     """
     im = plt.imread("test3.jpg")
