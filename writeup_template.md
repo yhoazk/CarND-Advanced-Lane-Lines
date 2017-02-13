@@ -16,27 +16,16 @@ The goals / steps of this project are the following:
 
 [//]: # (Image References)
 
-[image1]: ./examples/undistort_output.png "Undistorted"
-[image2]: ./test_images/test1.jpg "Road Transformed"
-[image3]: ./examples/binary_combo_example.jpg "Binary Example"
-[image4]: ./examples/warped_straight_lines.jpg "Warp Example"
-[image5]: ./examples/color_fit_lines.jpg "Fit Visual"
-[image6]: ./examples/example_output.jpg "Output"
-[video1]: ./project_video.mp4 "Video"
+
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/571/view) Points
-###Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
 
 ---
 ###Writeup / README
 
-####1. Provide a Writeup / README that includes all the rubric points and how you addressed each one.
-
-
-
 ###Camera Calibration
 
-####1. Briefly state how you computed the camera matrix and distortion coefficients. Provide an example of a distortion corrected calibration image.
+#### 1. Briefly state how you computed the camera matrix and distortion coefficients. Provide an example of a distortion corrected calibration image.
 
 The camera calibration is the process where the distortion created by the lenses in the camera are eliminated
 from the image. OpenCV library includes functionality to remove this distortion, specifically three functions.
@@ -49,30 +38,29 @@ from the image. OpenCV library includes functionality to remove this distortion,
 The order of the functions is the order in which they have to be called, the function `cv2.calibrateCamera`
  returns a matrix and distortion coefficients, this are stored in a pickle file so we do not have to repeat
  the procedure each time.
- 
+
 In this solution, a class dedicated to image processing and transformation was created: [`img_proc.py`](https://github.com/yhoazk/CarND-Advanced-Lane-Lines/blob/master/test_images/img_proc.py)
 
 This class implements the method [`camera_calibration`](https://github.com/yhoazk/CarND-Advanced-Lane-Lines/blob/master/test_images/img_proc.py#L28-L74)
 where all the calibration is made and the pickle object is generated.
 
-Here are the resulting images before and after calibration, the effect is visible in the edges of the image:
+Next are the resulting images before and after calibration, the effect is visible in the edges of the image
+![](./output_images/Checkboard_dist.png)
 
 
 
 
+### Pipeline (single images)
 
-###Pipeline (single images)
-
-####1. Example of a distortion-corrected image.
+#### 1. Example of a distortion-corrected image.
 Here is a demostration of how the image changes with the distortion. The affected pixels are at the edges
 and OpenCV removes the edges and interpolates the image so we have as a result an image without distortion
 and with the same size as the original.
 
-![](./output_images/Checkboard_dist.png)
 Here is the image distortion applied to one image of the road used in this project.
 ![](./output_images/Calibration_result.png)
 
-####2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
+#### 2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
 
 To detect the line lanes different color spaces where tested and also different edge detection algorithms,
 and also different order in which the transformations where applied.
@@ -94,7 +82,7 @@ Here is an example of how this looks:
 ![](./output_images/clear_patch.png)
 ##### _Read patch_
 ![](./output_images/patch.png)
-##### _L Channel_ 
+##### _L Channel_
 ![](./output_images/L_channel.png)
 ##### _S Channel_
 ![](./output_images/S_channel.png)
@@ -104,18 +92,20 @@ Then the selected channel is the S channel, which give us the information needed
 in the class [`Line.py`](./test_images/line.py) in the method: [`__get_ThresholdImg`](https://github.com/yhoazk/CarND-Advanced-Lane-Lines/blob/master/test_images/line.py#L57-L95)
 
 
-####3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
+#### 3. Getting the birds view perspective.
 
-The code for my perspective transform includes a function called `warper()`, which appears in lines 1 through 8 in the file `example.py` (output_images/examples/example.py) (or, for example, in the 3rd code cell of the IPython notebook).  The `warper()` function takes as inputs an image (`img`), as well as source (`src`) and destination (`dst`) points.  I chose the hardcode the source and destination points in the following manner:
+This perspective is useful as we will fit a polynomial with the information taken
+from this image, if we not transform the image, the lanes look as if they weren't
+parallel.
 
-The class [`img_proc::get_birdsView`](https://github.com/yhoazk/CarND-Advanced-Lane-Lines/blob/master/test_images/img_proc.py#L76-L77) implements and describes the 
+The class [`img_proc::get_birdsView`](https://github.com/yhoazk/CarND-Advanced-Lane-Lines/blob/master/test_images/img_proc.py#L76-L77) implements and describes the
 warping/perspective transformation, the polygon is initializated in the `__init__` function for this class.
-The selected values are a modification from the given as example for this project, 
+The selected values are a modification from the given as example for this project,
 this resulted in the following source and destination points:
 
-| Source        | Destination   | 
-|:-------------:|:-------------:| 
-| 577, 460      | 320, 0        | 
+| Source        | Destination   |
+|:-------------:|:-------------:|
+| 577, 460      | 320, 0        |
 | 240, 685      | 320, 720      |
 | 1058, 685     | 970, 720      |
 | 705, 460      | 970, 0        |
@@ -123,7 +113,9 @@ this resulted in the following source and destination points:
 To verify that the transformtion was being as correct as possible the countour was drawn and displayed.
 ![](./output_images/Plygon_bird.png)
 
-####4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
+
+
+#### 4. Fitting the lane lines with a 2nd order polynomial.
 
 In order to find the relevant white points and then fit the polynomial for the lane lines.
 First a mask was created, this mask helps to reduce the noise from the objects near to the lanes and
@@ -159,39 +151,69 @@ polynommial which fits as best as it can, Here are the results for te test image
 The radius of curvature is calculated a taking the mean of both polynomial and the by using the equation described [here](http://www.intmath.com/applications-differentiation/8-radius-curvature.php):
 
 - - -
-<span class="katex-html" aria-hidden="true"><span class="strut" style="height: 2.39413em;"></span><span class="strut bottom" style="height: 4.10213em; vertical-align: -1.708em;"></span><span class="base textstyle uncramped"><span class="mord text displaystyle textstyle uncramped reset-textstyle displaystyle textstyle uncramped"><span class="mord mathrm">Radius&nbsp;of&nbsp;curvature</span></span><span class="mrel reset-textstyle displaystyle textstyle uncramped">=</span><span class="mord reset-textstyle displaystyle textstyle uncramped"><span class="mopen sizing reset-size5 size5 reset-textstyle textstyle uncramped nulldelimiter"></span><span class="mfrac"><span class="vlist"><span class="" style="top: 1.05798em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 1em;">&#8203;</span></span><span class="reset-textstyle textstyle cramped"><span class="mord textstyle cramped"><span class="mord textstyle cramped"><span class="mord textstyle cramped"><span class="minner textstyle cramped"><span class="mopen style-wrap reset-textstyle textstyle uncramped"><span class="delimsizing mult"><span class="vlist"><span class="" style="top: 0.650015em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span><span class="delimsizinginner delim-size1"><span class="">∣</span></span></span><span class="" style="top: 0.044015em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span><span class="delimsizinginner delim-size1"><span class="">∣</span></span></span><span class="" style="top: -0.561985em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span><span class="delimsizinginner delim-size1"><span class="">∣</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span>&#8203;</span></span></span></span><span class="mord reset-textstyle textstyle cramped"><span class="mopen sizing reset-size5 size5 reset-textstyle textstyle uncramped nulldelimiter"></span><span class="mfrac"><span class="vlist"><span class="" style="top: 0.371228em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span><span class="reset-textstyle scriptstyle cramped mtight"><span class="mord scriptstyle cramped mtight"><span class="mord scriptstyle cramped mtight"><span class="mord mtight"><span class="mord scriptstyle cramped mtight"><span class="minner scriptstyle cramped mtight"><span class="mopen sizing reset-size5 size5 reset-scriptstyle textstyle uncramped nulldelimiter"></span><span class="mord scriptstyle cramped mtight"><span class="mord mathit mtight">d</span></span><span class="mord scriptstyle cramped mtight"><span class="mord mathit mtight">x</span></span><span class="mclose sizing reset-size5 size5 reset-scriptstyle textstyle uncramped nulldelimiter"></span></span></span><span class="msupsub"><span class="vlist"><span class="" style="top: -0.34144em; margin-right: 0.0714286em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span><span class="reset-scriptstyle scriptscriptstyle cramped mtight"><span class="mord scriptscriptstyle cramped mtight"><span class="mord mathrm mtight">2</span></span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span>&#8203;</span></span></span></span></span></span></span></span><span class="" style="top: -0.23em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span><span class="reset-textstyle textstyle uncramped frac-line"></span></span><span class="" style="top: -0.446108em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span><span class="reset-textstyle scriptstyle cramped mtight"><span class="mord scriptstyle cramped mtight"><span class="mord scriptstyle cramped mtight"><span class="mord mtight"><span class="mord scriptstyle cramped mtight"><span class="mord mathit mtight">d</span></span><span class="msupsub"><span class="vlist"><span class="" style="top: -0.286em; margin-right: 0.0714286em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span><span class="reset-scriptstyle scriptscriptstyle cramped mtight"><span class="mord scriptscriptstyle cramped mtight"><span class="mord mathrm mtight">2</span></span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span>&#8203;</span></span></span></span><span class="mord scriptstyle cramped mtight"><span class="mord mathit mtight" style="margin-right: 0.03588em;">y</span></span></span></span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span>&#8203;</span></span></span><span class="mclose sizing reset-size5 size5 reset-textstyle textstyle uncramped nulldelimiter"></span></span><span class="mclose style-wrap reset-textstyle textstyle uncramped"><span class="delimsizing mult"><span class="vlist"><span class="" style="top: 0.650015em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span><span class="delimsizinginner delim-size1"><span class="">∣</span></span></span><span class="" style="top: 0.044015em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span><span class="delimsizinginner delim-size1"><span class="">∣</span></span></span><span class="" style="top: -0.561985em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span><span class="delimsizinginner delim-size1"><span class="">∣</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span>&#8203;</span></span></span></span></span></span></span></span></span></span><span class="" style="top: -0.23em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 1em;">&#8203;</span></span><span class="reset-textstyle textstyle uncramped frac-line"></span></span><span class="" style="top: -1.04002em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 1em;">&#8203;</span></span><span class="reset-textstyle textstyle uncramped"><span class="mord textstyle uncramped"><span class="mord textstyle uncramped"><span class="mord"><span class="mord textstyle uncramped"><span class="minner textstyle uncramped"><span class="mopen style-wrap reset-textstyle textstyle uncramped" style="top: 0em;"><span class="delimsizing size2">[</span></span><span class="mord textstyle uncramped"><span class="mord mathrm">1</span></span><span class="mbin">+</span><span class="mord"><span class="mord textstyle uncramped"><span class="minner textstyle uncramped"><span class="mopen style-wrap reset-textstyle textstyle uncramped" style="top: 0em;"><span class="delimsizing size2">(</span></span><span class="mord reset-textstyle textstyle uncramped"><span class="mopen sizing reset-size5 size5 reset-textstyle textstyle uncramped nulldelimiter"></span><span class="mfrac"><span class="vlist"><span class="" style="top: 0.345em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span><span class="reset-textstyle scriptstyle cramped mtight"><span class="mord scriptstyle cramped mtight"><span class="mord scriptstyle cramped mtight"><span class="mord scriptstyle cramped mtight"><span class="minner scriptstyle cramped mtight"><span class="mopen sizing reset-size5 size5 reset-scriptstyle textstyle uncramped nulldelimiter"></span><span class="mord scriptstyle cramped mtight"><span class="mord mathit mtight">d</span></span><span class="mord scriptstyle cramped mtight"><span class="mord mathit mtight">x</span></span><span class="mclose sizing reset-size5 size5 reset-scriptstyle textstyle uncramped nulldelimiter"></span></span></span></span></span></span></span><span class="" style="top: -0.23em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span><span class="reset-textstyle textstyle uncramped frac-line"></span></span><span class="" style="top: -0.446108em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span><span class="reset-textstyle scriptstyle uncramped mtight"><span class="mord scriptstyle uncramped mtight"><span class="mord scriptstyle uncramped mtight"><span class="mord scriptstyle uncramped mtight"><span class="minner scriptstyle uncramped mtight"><span class="mopen sizing reset-size5 size5 reset-scriptstyle textstyle uncramped nulldelimiter"></span><span class="mord scriptstyle uncramped mtight"><span class="mord mathit mtight">d</span></span><span class="mord scriptstyle uncramped mtight"><span class="mord mathit mtight" style="margin-right: 0.03588em;">y</span></span><span class="mclose sizing reset-size5 size5 reset-scriptstyle textstyle uncramped nulldelimiter"></span></span></span></span></span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span>&#8203;</span></span></span><span class="mclose sizing reset-size5 size5 reset-textstyle textstyle uncramped nulldelimiter"></span></span><span class="mclose style-wrap reset-textstyle textstyle uncramped" style="top: 0em;"><span class="delimsizing size2">)</span></span></span></span><span class="msupsub"><span class="vlist"><span class="" style="top: -0.764em; margin-right: 0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span><span class="reset-textstyle scriptstyle uncramped mtight"><span class="mord scriptstyle uncramped mtight"><span class="mord mathrm mtight">2</span></span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span>&#8203;</span></span></span></span><span class="mclose style-wrap reset-textstyle textstyle uncramped" style="top: 0em;"><span class="delimsizing size2">]</span></span></span></span><span class="msupsub"><span class="vlist"><span class="" style="top: -0.829108em; margin-right: 0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span><span class="reset-textstyle scriptstyle uncramped mtight"><span class="mord scriptstyle uncramped mtight"><span class="mord scriptstyle uncramped mtight"><span class="mord scriptstyle uncramped mtight"><span class="mord mathrm mtight">3</span></span><span class="mord text scriptstyle uncramped mtight"><span class="mord mathrm mtight">/</span></span><span class="mord scriptstyle uncramped mtight"><span class="mord mathrm mtight">2</span></span></span></span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">&#8203;</span></span>&#8203;</span></span></span></span></span></span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 1em;">&#8203;</span></span>&#8203;</span></span></span><span class="mclose sizing reset-size5 size5 reset-textstyle textstyle uncramped nulldelimiter"></span></span></span></span>
+![](./output_images/curvature_formula.png)
 - - -
 
 The implementation is in the class [`lane::get_Curvature`](https://github.com/yhoazk/CarND-Advanced-Lane-Lines/blob/master/test_images/lane.py#L71-_L94)
 
-For the vehicle position with respect to the center, is straight fordward,
+Get the vehicle position with respect to the center, is straight fordward,
 having the center polynomial evaluate the point where the car is closest, ie.
-`Y=720` this will give us 
+`Y=720` this will give us the calculated center of the **lane** while if we consider
+the camera to be in the center of the car, the difference between the center of the
+image and the polynomial shall give us and aproximation to the offset.
+![](./output_images/Shaded_lane_top.png)
+The after mentioned operation is implemented in [`Lane::process_laneOffset`](https://github.com/yhoazk/CarND-Advanced-Lane-Lines/blob/master/test_images/lane.py#L56-L68)
 
 
+#### 6. Image of the Plotted result on the image.
 
+All the steps mentioned above are used to generate this final image where the lane
+is marked with yellow and the information, offset and curvature, are also displayed
+on the screen.
 
+All the processing is made in [`Lane::process_lane`](https://github.com/yhoazk/CarND-Advanced-Lane-Lines/blob/master/test_images/lane.py#L96-L147)
 
-
-####6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
-
-I implemented this step in lines # through # in my code in `yet_another_file.py` in the function `map_lane()`.  Here is an example of my result on a test image:
-
-![alt text][image6]
-
----
-
-###Pipeline (video)
-
-####1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
-
-Here's a [link to my video result](./project_video.mp4)
+Here is an example of the generated output:
+![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/0h1-dbGwueY/0.jpg)
 
 ---
 
-###Discussion
+### Pipeline (video)
 
-####1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
+Here's a [link to my video result](https://youtu.be/0h1-dbGwueY)
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/0h1-dbGwueY/0.jpg)](https://www.youtube.com/watch?v=0h1-dbGwueY)
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
 
+---
+
+### Discussion
+
+The methods used in this project were selected because their performance, line detection
+algorithms were used at the beggining, but they did not improve the lines in the
+thresholded image.
+I had not enough time to implement the non-blind search, to remove the possible noise
+from the sides of the image a mask was implemented, this helped in the accurracy of
+the lines.
+
+The video where this project works is somewhat ideal, the pipeline at this moment is
+fragile as it relies almost in a 100% on the lane marks, if those lines are not
+visible enough the algorithm will fail.
+
+The conditions that may cause this are:
+- Snow
+- Other vehicles interfering the lanes
+- Lane lines not marked
+- Irregular color patches in the road
+- Dawn, sunset, night ligth conditions
+- Rain
+
+Defenitely there is a lot of room for improvements in this project, but it is
+a good start point.
+
+This are some ideas how the pipeline could be improved:
+- Detect the horizon to adjust the transformation polygon.
+- Use the covariance Matrix to decide how good was the estimation.
+- Perfom sensor fusion with other sensors, like radars or lidars.
+- A better threshold algorithm, the implemented gives somewhat bad results in
+    comparison to one used in GIMP. [GIMPs algorithm](https://docs.gimp.org/en/gimp-tool-threshold.html) yields a more solid and clean
+    line.
